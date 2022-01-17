@@ -1,0 +1,253 @@
+
+Startup1()
+{
+	Name="Start Task"
+	LDA #0   //reset value
+	STA ~19  //store in register 21
+	
+	//AWAY Mode OFF by default
+	LDA #255
+	STA ~15
+}
+
+Task1()
+{
+	Name="Multi Function in One Button"
+	LDA ^10,0s
+	CMP #5
+	BRZ  L001
+	NULL
+L001:
+	LDA ~19
+	ADD #1
+	STA ~19
+	StopTask(2)		//Use CancelTask() for DLight 754 and earlier
+	StartTask(2)
+	NULL
+}
+
+Task2()
+{
+	Name="Push Button Reset Delay"
+	Delay(1.00)
+	LDA ~19
+	CMP #1
+	BRZ  L002
+	LDA ~19
+	CMP #2
+	BRZ  L003
+	LDA ~19
+	CMP #3
+	BRZ  L004
+	LDA ~19
+	CMP #4
+	BRZ  L005
+	//button pushed too many times
+	LDA #0
+	STA ~19
+	NULL
+L002:
+	LDA #0
+	STA ~19
+	Preset(A=2, P=4, F=5.00)
+	NULL
+L003:
+	LDA #0
+	STA ~19
+	Preset(A=3, P=4, F=5.00)
+	NULL
+L004:
+	LDA #0
+	STA ~19
+	Preset(A=5, P=4, F=5.00)
+	NULL
+L005:
+	LDA #0
+	STA ~19
+	Preset(A=7, P=4, F=5.00)
+	NULL
+}
+
+//------------------------------------
+
+Task3()
+{
+	Name="Heat Pump 3H/5H"
+	Start(0x1C,52,0x64,x,0x00,0x00,0xFF)	// Area 52 (Heat Pump Fan)
+	
+	copy @0,~1,7
+	LDA ~4	
+	
+	CMP #0
+	BRZ FAN_3H
+	CMP #1
+	BRZ FAN_5H
+	
+	CancelTask(4)
+	NULL
+
+FAN_3H:	
+	LDA #3
+	STA ~20
+	CancelTask(4)
+	StartTask(4)
+	NULL
+
+FAN_5H:	
+	LDA #5
+	STA ~20
+	CancelTask(4)
+	StartTask(4)
+	NULL
+}
+
+Task4()
+{
+	Name="Heat Pump TIMER"
+	LDA ~20
+	CMP #3
+	BRZ FAN_3H
+	CMP #5
+	BRZ FAN_5H
+	NULL
+
+FAN_3H:	
+	Dynet(0x6c,"FAN3Hr")
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Jump(FAN_OFF)
+	NULL
+
+FAN_5H:
+	Dynet(0x6c,"FAN5Hr")
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)
+	Delay(900)	
+	Jump(FAN_OFF)
+	NULL
+	
+FAN_OFF:
+	Preset(A=52,P=4)
+	NULL
+}
+
+
+Task5()
+{
+	Name="AWAY MODE ON/OFF"
+	Start(0x1C,199,0x64,x,0x00,0x00,0xFF)	// Area 199 (AwayMode)
+	copy @0,~1,7
+	LDA ~4
+	CMP #0
+	BRZ AWAYMODE_ON
+	CMP #3
+	BRZ AWAYMODE_OFF
+	NULL
+
+AWAYMODE_ON:
+	LDA #0
+	STA ~15
+	Dynet(0x6c,"AWAYON")
+	NULL
+	
+AWAYMODE_OFF:
+	LDA #255
+	STA ~15
+	CancelTask(6,7)
+	Dynet(0x6c,"AWAYOF")
+	NULL
+}
+
+Task6()
+{
+	Name="AWAY MODE RUN IF ON"
+	Start(A=200,P=1) //timer trigger in Dimmer #31
+	LDA ~15
+	CMP #0
+	BRZ AWAYMODE_ACTIVATED	
+	Dynet(0x6c,"AWAYOF")
+	Null
+
+AWAYMODE_ACTIVATED: 
+	Dynet(0x6c,"AW RUN")	
+
+	CancelTask(7)
+	StartTask(7)
+	NULL
+}
+
+Task7()
+{
+	Name="Away Mode Task"
+	
+	Preset(A=2,P=5) //Living Room
+	Delay(900)	
+	Preset(A=3,P=5) //Kitchen Room
+	Delay(900)	
+	Preset(A=2,P=4) //Living Room
+	Delay(900)		
+	Preset(A=3,P=4) //Living Room
+	Preset(A=6,P=5) //Bathroom Room
+	Delay(900)	
+	Preset(A=6,P=4) //Living Room
+	Preset(A=3,P=5) //Kitchen Room
+	Delay(900)		
+	Preset(A=2,P=5) //Living Room
+	Delay(400)	
+	Preset(A=3,P=4) //Kitchen Room
+	Delay(400)
+	Preset(A=2,P=4) //Kitchen Room
+	Delay(5)
+	StartTask(8) //All Off
+}
+
+Task8()
+{
+	Name="ALL OFF"
+	CancelTask(7)
+	
+	Preset=4
+	
+	Preset(A=2)
+	Delay(0.1)
+	Preset(A=3)
+	Delay(0.1)
+	Preset(A=4)
+	Delay(0.1)
+	Preset(A=5)
+	Delay(0.1)
+	Preset(A=6)
+	Delay(0.1)
+	Preset(A=7)
+	Delay(0.1)
+	Preset(A=51)
+	Delay(0.1)
+	Preset(A=52)	
+}
