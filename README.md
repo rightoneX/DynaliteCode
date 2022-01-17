@@ -2,7 +2,7 @@
 
 # Philips Dynalite Code
 
-> Dynalite Code for user switch panels
+> Dynalite Code for user switch panels and motion sensors
 
 
 ## License
