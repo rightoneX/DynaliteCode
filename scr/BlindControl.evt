@@ -1,0 +1,75 @@
+Device=UPan
+Name="Blind Preset Program"
+
+
+M1:
+	Preset(P=1,A=1)
+
+Startup1()
+{
+
+}
+
+Task1()
+{
+  Start(0x1c,0x02,x,x,x,x,x)
+	Copy	M1,~0,7		// load the template message into RAM
+  LDA @3
+  STA ~4
+  LDA @2  //Load Fade byte from message from other UPAN and use as scaler master
+  STA ~8
+  LDX #0x00
+  LDA #0x7d
+  STA ~3
+FaderCount:
+	LDA	^19,0,X		// Get the Fader 1 port
+  STX ~2
+  LDX ~8        //Get Master Level
+  MUL   
+  STX ~9        //Result=ResultA*Channel
+  LDA ~9
+  XOR #0xff
+  BRZ correct
+	STA	~5		    // resultant channel level
+  BRA channel
+correct:
+  LDA #1        //Remove Don't Cares
+  STA ~5
+channel:
+  TX	~0,2,7		// Blind preset program
+  LDX ~2
+  INCX
+  CMPX #0x08
+  BNE FaderCount
+
+  LDX #0x0b
+FaderCount1:
+	LDA	^19,0,X		// Get the Fader 1 port
+  STX ~2
+  LDX ~8        //Get Master Level
+  MUL   
+  STX ~9        //Result=ResultA*Channel
+  LDA ~9
+  XOR #0xff
+  BRZ correct1
+	STA	~5		// Store it in the message fade low byte
+  BRA channel1
+correct1:
+  LDA #1    //Remove Don't Cares
+  STA ~5
+channel1:
+  LDA ~2
+  LDX ~2
+  SUB #0x03
+  STA ~2
+  TX	~0,2,7		// Send the message
+  INCX
+  CMPX #0x0f
+  BNE FaderCount1
+
+
+	NULL
+
+}
+
+
